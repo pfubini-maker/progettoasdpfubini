@@ -582,17 +582,21 @@ public:
     // stampaNodo: stampa un nodo e tutta la sua lista di adiacenza
     // ---------------------------------------------------------------
     void stampaNodo(int node_id) const {
+        svuotaFile("output.txt");
+
         const Node* n = trovaNodo(node_id);
         if (n == nullptr) {
             cout << "Nodo " << node_id << " non trovato nel grafo." << endl;
             return;
         }
-        cout << "Nodo " << node_id << " - vicini:" << endl;
+        
+        scriviSuFile("output.txt", "Nodo " + to_string(node_id) + " - vicini:\n");
         bool found_any = false;
         for (const auto& bucket : n->getAdjacencyTable()) {
             for (const auto& edge : bucket) {
-                cout << "   -> " << edge.getNeighbor()
-                     << " (peso: " << edge.getWeight() << ")" << endl;
+                
+                scriviSuFile("output.txt", "   -> " + to_string(edge.getNeighbor()) + " (peso: " + to_string(edge.getWeight()) + ")\n");
+                cout << "finito di scrivere sul file ora puoi guardare il file output.txt" << endl;
                 found_any = true;
             }
         }
@@ -603,12 +607,17 @@ public:
     // stampaListaNodi: stampa tutti i nodi presenti nel grafo
     // ---------------------------------------------------------------
     void stampaListaNodi() const {
-        cout << "Lista dei nodi nel grafo (" << num_nodes << " totali):" << endl;
+        svuotaFile("output.txt");
+        scriviSuFile("output.txt", "Lista dei nodi nel grafo (" + to_string(num_nodes) + " totali):\n");
+        int i=0;
         for (const auto& bucket : node_hash_table) {
+            i++;
+            if(1%20==0){scriviSuFile("output.txt", "\n");}
             for (const auto& node : bucket) {
-                cout << "  - " << node.getId();
+                scriviSuFile("output.txt", "  - " + to_string(node.getId()));
             }
         }
+        cout << "finito di scrivere sul file ora puoi guardare"<< endl;
     }
 
     // ---------------------------------------------------------------
@@ -616,6 +625,7 @@ public:
     // il grafico a barre delle frequenze dei pesi degli archi
     // ---------------------------------------------------------------
     void infoGraph() const {
+        svuotaFile("output.txt");
         int numero_archi = 0;
         int nodo_piu_connesso = -1;
         int grado_massimo = -1;
@@ -653,15 +663,17 @@ public:
         numero_archi /= 2;   // ogni arco e' stato contato 2 volte (non orientato)
         for (auto& v : istogramma_pesi) v /= 2;   // stesso discorso per l'istogramma
 
-        cout << "===== INFO SUL GRAFO =====" << endl;
-        cout << "Numero nodi: " << num_nodes << endl;
-        cout << "Numero archi: " << numero_archi << endl;
+        
+        scriviSuFile("output.txt", "===== INFO SUL GRAFO =====\n");
+        
+        scriviSuFile("output.txt", "Numero nodi: " + to_string(num_nodes) + "\n");
+        scriviSuFile("output.txt", "Numero archi: " + to_string(numero_archi) + "\n");
         if (nodo_piu_connesso != -1) {
-            cout << "Nodo piu' connesso: " << nodo_piu_connesso
-                 << " (grado " << grado_massimo << ")" << endl;
+            scriviSuFile("output.txt", "Nodo piu' connesso: " + to_string(nodo_piu_connesso) + " (grado " + to_string(grado_massimo) + ")\n");
         }
-        cout << endl;
+        
         bargraph(istogramma_pesi, "Distribuzione pesi degli archi", max_edge_weight);
+        cout << "finito di scrivere sul file ora puoi guardare il file output.txt" << endl;
     }
 
     // ---------------------------------------------------------------
@@ -673,12 +685,12 @@ public:
     // valore presente nel vettore v stesso (v[p]/max_in_v), non un tetto
     // globale esterno. maxValue resta nella firma per compatibilita' con
     // lo scheletro originale, ma e' qui solo a scopo informativo/futuro.
-    static void bargraph(const vector<int>& v, const string& titolo, int /*maxValue*/) {
-        cout << titolo << endl;
-        cout << string(45, '_') << endl;
+    static void bargraph(const vector<int>& v, const string& titolo, int /*maxValue*/, string file_output = "output.txt") {
+        scriviSuFile(file_output, titolo + "\n");
+        scriviSuFile(file_output, string(45, '_') + "\n");
 
         if (v.empty()) {
-            cout << "(nessun dato)" << endl;
+            scriviSuFile(file_output, "(nessun dato)" + "\n");
             return;
         }
 
@@ -712,8 +724,8 @@ public:
             int num_cancelletti = (int)((double)x * v[p] / (double)max_in_v);
             if (num_cancelletti < 0) num_cancelletti = 0;
 
-            cout << label << string(num_cancelletti, '#')
-                 << " {" << v[p] << "}" << endl;
+            scriviSuFile(file_output, label + string(num_cancelletti, '#')
+                         + " {" + to_string(v[p]) + "}" + "\n");
         }
     }
 };

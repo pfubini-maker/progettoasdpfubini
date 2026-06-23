@@ -578,6 +578,75 @@ public:
         return t.contaFoglieAlbero();
     }
 
+    vector<vector<int>> componentiConnesse() const {
+    vector<vector<int>> componenti;
+
+    struct VisitedSet {
+        UniversalHash h;
+        vector<list<int>> table;
+        int count = 0;
+        VisitedSet() { h.init(16); table.resize(h.getM()); }
+        void rehash() {
+            vector<list<int>> old = move(table);
+            h.init(h.getM() * 2 + 1);
+            table.clear(); table.resize(h.getM()); count = 0;
+            for (auto& b : old) for (int v : b) {
+                table[h.compute(v)].push_back(v); count++;
+            }
+        }
+        bool contains(int id) const {
+            for (int v : table[h.compute(id)]) if (v == id) return true;
+            return false;
+        }
+        void insert(int id) {
+            if (count >= (int)(table.size() * 0.7)) rehash();
+            table[h.compute(id)].push_back(id); count++;
+        }
+    };
+
+    VisitedSet assegnati;
+
+    for (const auto& bucket : node_hash_table) {
+        for (const auto& nodo_start : bucket) {
+            if (assegnati.contains(nodo_start.getId())) continue;
+
+            vector<int> componente;
+            vector<int> coda;
+            coda.push_back(nodo_start.getId());
+            assegnati.insert(nodo_start.getId());
+
+            for (size_t i = 0; i < coda.size(); ++i) {
+                int corrente = coda[i];
+                componente.push_back(corrente);
+                const Node* n = trovaNodo(corrente);
+                if (n == nullptr) continue;
+                for (const auto& adj_bucket : n->getAdjacencyTable())
+                    for (const auto& edge : adj_bucket) {
+                        int vicino = edge.getNeighbor();
+                        if (!assegnati.contains(vicino)) {
+                            assegnati.insert(vicino);
+                            coda.push_back(vicino);
+                        }
+                    }
+            }
+            componenti.push_back(componente);
+        }
+    }
+    return componenti;
+}
+
+        static string leggiNomeCasuale(int fallback_index) {
+            ifstream f("nomi.txt");
+            if (!f.is_open()) return "Componente" + to_string(fallback_index);
+            vector<string> nomi;
+            string riga;
+            while (getline(f, riga))
+                if (!riga.empty()) nomi.push_back(riga);
+            if (nomi.empty()) return "Componente" + to_string(fallback_index);
+            return nomi[rand() % nomi.size()];
+        }
+
+
     // ---------------------------------------------------------------
     // stampaNodo: stampa un nodo e tutta la sua lista di adiacenza
     // ---------------------------------------------------------------
@@ -937,7 +1006,7 @@ int main() {
         cout << "4) Conta i cammini min-max tra due nodi" << endl;
         cout << "5] Info sul grafo (numero nodi/archi, grafico pesi)" << endl;
         cout << "6} Cambia file da caricare" << endl;
-        cout << "0) Esci" << endl;
+        cout << "0/ Esci" << endl;
         cout << "Scegli (il primo giro è gratis)" << endl;
 
         int scelta;
@@ -1010,6 +1079,74 @@ int main() {
                 auto end = chrono::high_resolution_clock::now();
                 chrono::duration<double, milli> elapsed = end - start;
                 cout << "(operazione completata in " << elapsed.count() << " ms)" << endl;
+                break;
+            }
+            case 7: {
+                auto start = chrono::high_resolution_clock::now();
+                vector<vector<int>> comp = g.componentiConnesse();
+                auto end = chrono::high_resolution_clock::now();
+                chrono::duration<double, milli> elapsed = end - start;
+
+                vector<string> nomi_comp;
+                for (int i = 0; i < (int)comp.size(); ++i)
+                    nomi_comp.push_back(UniversalHashGraph::leggiNomeCasuale(i));
+
+                svuotaFile();
+                string out = "===== COMPONENTI CONNESSE (" + to_string(comp.size()) + " totali) =====\n";
+                for (int i = 0; i < (int)comp.size(); ++i)
+                    out += "  [" + nomi_comp[i] + "] -> " + to_string(comp[i].size()) + " nodi\n";
+                out += "(operazione completata in " + to_string(elapsed.count()) + " ms)\n";
+                stampasuFile(out);
+                cout << "file stampato con successo -> output.txt" << endl;
+
+                bool continua_comp = true;
+                while (continua_comp) {
+                    cout << "\nCosa vuoi vedere?" << endl;
+                    cout << "1) Stampa una componente specifica" << endl;
+                    cout << "2) Stampa tutte le componenti" << endl;
+                    cout << "0) Torna al menu principale" << endl;
+                    int scelta_comp; cin >> scelta_comp;
+
+                    switch (scelta_comp) {
+                        case 1: {
+                            for (int i = 0; i < (int)comp.size(); ++i)
+                                cout << "  " << i << ") " << nomi_comp[i]
+                                    << " (" << comp[i].size() << " nodi)" << endl;
+                            cout << "Quale? ";
+                            int idx; cin >> idx;
+                            if (idx < 0 || idx >= (int)comp.size()) {
+                                cout << "Indice non valido." << endl;
+                                break;
+                            }
+                            svuotaFile();
+                            string s = "Componente [" + nomi_comp[idx] + "] ("
+                                    + to_string(comp[idx].size()) + " nodi):\n";
+                            for (int nodo : comp[idx])
+                                s += "  - " + to_string(nodo) + "\n";
+                            stampasuFile(s);
+                            cout << "file stampato con successo -> output.txt" << endl;
+                            break;
+                        }
+                        case 2: {
+                            svuotaFile();
+                            string s = "===== TUTTE LE COMPONENTI CONNESSE =====\n";
+                            for (int i = 0; i < (int)comp.size(); ++i) {
+                                s += "\n[" + nomi_comp[i] + "] (" + to_string(comp[i].size()) + " nodi):\n";
+                                for (int nodo : comp[i])
+                                    s += "  - " + to_string(nodo) + "\n";
+                            }
+                            stampasuFile(s);
+                            cout << "file stampato con successo -> output.txt" << endl;
+                            break;
+                        }
+                        case 0:
+                            continua_comp = false;
+                            break;
+                        default:
+                            cout << "Scelta non valida." << endl;
+                            break;
+                    }
+                }
                 break;
             }
             case 0: {

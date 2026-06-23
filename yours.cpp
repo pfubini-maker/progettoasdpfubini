@@ -679,14 +679,19 @@ public:
         svuotaFile("output.txt");
         scriviSuFile("output.txt", "Lista dei nodi nel grafo (" + to_string(num_nodes) + " totali):\n");
         int i=0;
+        auto start = chrono::high_resolution_clock::now();
         for (const auto& bucket : node_hash_table) {
-            i++;
-            if(1%20==0){scriviSuFile("output.txt", "\n");}
+            
             for (const auto& node : bucket) {
+                i++;
+                if(i%20==0){scriviSuFile("output.txt", "\n");}
                 scriviSuFile("output.txt", "  - " + to_string(node.getId()));
             }
         }
+          auto end = chrono::high_resolution_clock::now();
+                chrono::duration<double, milli> elapsed = end - start;
         cout << "finito di scrivere sul file ora puoi guardare"<< endl;
+        cout << "(operazione (scrittura) completata in " << elapsed.count() << " ms)" << endl;
     }
 
     // ---------------------------------------------------------------
@@ -759,7 +764,7 @@ public:
         scriviSuFile(file_output, string(45, '_') + "\n");
 
         if (v.empty()) {
-            scriviSuFile(file_output, "(nessun dato)" + "\n");
+            scriviSuFile(file_output, "(nessun dato da stampare)\n");
             return;
         }
 
@@ -1006,6 +1011,7 @@ int main() {
         cout << "4) Conta i cammini min-max tra due nodi" << endl;
         cout << "5] Info sul grafo (numero nodi/archi, grafico pesi)" << endl;
         cout << "6} Cambia file da caricare" << endl;
+        cout << "7) Componenti connesse" << endl;
         cout << "0/ Esci" << endl;
         cout << "Scegli (il primo giro è gratis)" << endl;
 
@@ -1082,6 +1088,7 @@ int main() {
                 break;
             }
             case 7: {
+                svuotaFile("output.txt");
                 auto start = chrono::high_resolution_clock::now();
                 vector<vector<int>> comp = g.componentiConnesse();
                 auto end = chrono::high_resolution_clock::now();
@@ -1091,20 +1098,21 @@ int main() {
                 for (int i = 0; i < (int)comp.size(); ++i)
                     nomi_comp.push_back(UniversalHashGraph::leggiNomeCasuale(i));
 
-                svuotaFile();
+                
                 string out = "===== COMPONENTI CONNESSE (" + to_string(comp.size()) + " totali) =====\n";
+                
                 for (int i = 0; i < (int)comp.size(); ++i)
                     out += "  [" + nomi_comp[i] + "] -> " + to_string(comp[i].size()) + " nodi\n";
                 out += "(operazione completata in " + to_string(elapsed.count()) + " ms)\n";
-                stampasuFile(out);
+                scriviSuFile("output.txt", out);
                 cout << "file stampato con successo -> output.txt" << endl;
 
                 bool continua_comp = true;
                 while (continua_comp) {
                     cout << "\nCosa vuoi vedere?" << endl;
                     cout << "1) Stampa una componente specifica" << endl;
-                    cout << "2) Stampa tutte le componenti" << endl;
-                    cout << "0) Torna al menu principale" << endl;
+                    cout << "2} Stampa tutte le componenti" << endl;
+                    cout << "0] Torna al menu principale" << endl;
                     int scelta_comp; cin >> scelta_comp;
 
                     switch (scelta_comp) {
@@ -1118,24 +1126,24 @@ int main() {
                                 cout << "Indice non valido." << endl;
                                 break;
                             }
-                            svuotaFile();
+                            svuotaFile("output.txt");
                             string s = "Componente [" + nomi_comp[idx] + "] ("
                                     + to_string(comp[idx].size()) + " nodi):\n";
                             for (int nodo : comp[idx])
                                 s += "  - " + to_string(nodo) + "\n";
-                            stampasuFile(s);
+                            scriviSuFile("output.txt", s);
                             cout << "file stampato con successo -> output.txt" << endl;
                             break;
                         }
                         case 2: {
-                            svuotaFile();
+                            svuotaFile("output.txt");
                             string s = "===== TUTTE LE COMPONENTI CONNESSE =====\n";
                             for (int i = 0; i < (int)comp.size(); ++i) {
                                 s += "\n[" + nomi_comp[i] + "] (" + to_string(comp[i].size()) + " nodi):\n";
                                 for (int nodo : comp[i])
                                     s += "  - " + to_string(nodo) + "\n";
                             }
-                            stampasuFile(s);
+                            scriviSuFile("output.txt", s);
                             cout << "file stampato con successo -> output.txt" << endl;
                             break;
                         }
